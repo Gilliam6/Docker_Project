@@ -1,0 +1,133 @@
+version: "3.8"
+
+services:
+
+  ftp:
+    container_name: ftp
+    build: ./requirements/bonus/ftp
+    env_file: .env
+    ports:
+      - 21:21
+      - 20:20
+    networks:
+      - net42
+    restart: always
+    volumes:
+      - wp:/home/$FTP_USER/ftp
+
+  portainer:
+    container_name: portainer
+    image: portainer/portainer-ce:latest
+    restart: always
+    ports:
+      - 9000:9000
+    volumes:
+      - portain:/data 
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - net42
+
+  nodejs_static:
+    container_name: nodejs_static
+    build: ./requirements/bonus/nodejs_static
+    restart: always
+    networks:
+      - net42
+    ports:
+      - 3001:3001
+  
+  nodejs:
+    container_name: nodejs
+    build: ./requirements/bonus/nodejs
+    restart: always
+    networks:
+      - net42
+    ports:
+      - 3000:3000
+  
+  adminer:
+    container_name: adminer
+    build: ./requirements/bonus/adminer
+    restart: always
+    networks:
+      - net42
+    ports:
+      - 8080:8080
+    depends_on:
+      - mariadb
+  
+  redis:
+    container_name: redis
+    build: ./requirements/bonus/redis
+    restart: always
+    networks:
+      - net42
+    ports:
+      - 6379:6379
+  nginx:
+    container_name: nginx
+    build: ./requirements/nginx
+    restart: always
+    networks:
+      - net42
+    ports:
+      - 443:443
+    volumes:
+      - wp:/var/www/html
+    depends_on:
+      - wp
+    hostname: rstephan.42.fr
+  
+  mariadb:
+    container_name: mariadb
+    build: ./requirements/mariaDB
+    restart: always
+    volumes: 
+      - mysql:/var/lib/mysql
+    networks:
+      - net42
+    ports:
+      - 3306:3306
+ 
+  wp:
+    container_name: wordpress
+    build: ./requirements/wp
+    env_file: .env
+    restart: always
+    volumes:
+      - wp:/var/www/html
+    depends_on:
+      - mariadb
+      - redis
+    networks:
+      - net42
+
+volumes:
+
+  mysql:
+    name: mysql
+    driver: local
+    driver_opts:
+      device: /home/rstephan/data/mariaDB
+      o: bind
+      type: none
+  wp:
+    name: wp
+    driver: local
+    driver_opts:
+      device: /home/rstephan/data/wb
+      o: bind
+      type: none
+
+  portain:
+    name: portain
+    driver: local
+    driver_opts:
+      device: /home/rstephan/data/portainer
+      o: bind
+      type: none
+
+networks:
+  net42:
+    driver: bridge
